@@ -1,0 +1,12 @@
+.env
+*.pyc
+*.pyo
+venv/
+venv*
+__pycache__/
+__pycache__*
+XDG_CACHE_HOME/
+XDG_CACHE_HOME*
+.idea/
+*.pem
+.vscode/
