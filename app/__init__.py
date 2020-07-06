@@ -29,7 +29,7 @@ def create_app(config_obj=None):
         app.config.from_object(config)
     else:
         app.config.from_object(config_obj)
-    initialize_extentions(app)
+    initialize_extensions(app)
     register_blueprints(app)
 
     # Create database tables if they do not exist

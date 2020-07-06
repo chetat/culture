@@ -2,4 +2,6 @@ from flask import Blueprint
 
 api = Blueprint('api', __name__, url_prefix='/api/v1')
 
-from . import user
+from . import (
+    user, roles, professions
+    )

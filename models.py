@@ -4,11 +4,10 @@ from datetime import datetime
 
 
 user_roles = db.Table("user_role",
-                      db.Column("id", db.Integer, primary_key=True),
                       db.Column("user_id", db.Integer,
                                 db.ForeignKey("users.id"),
                                 primary_key=True),
-                      db.Column("rolel_id", db.Integer,
+                      db.Column("role_id", db.Integer,
                                 db.ForeignKey("roles.id"),
                                 primary_key=True),
                       db.Column("created_at", db.DateTime,
@@ -16,7 +15,6 @@ user_roles = db.Table("user_role",
                       )
 user_profession = db.Table(
     "user_profession",
-    db.Column("id", db.Integer, primary_key=True),
     db.Column("user_id", db.Integer,
               db.ForeignKey("users.id"),
               primary_key=True),
@@ -28,12 +26,19 @@ user_profession = db.Table(
 
 class Role(db.Model):
     __tablename__ = 'roles'
-    id = db.Column(db.Integer, primary=True)
+    id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     users = db.relationship("Users", secondary=user_roles,
                             backref=db.backref('Role',
                                                cascade="all,delete"),
                             lazy=True)
+
+    @property
+    def serialize(self):
+        return {
+            "name": self.name,
+            "id": self.id
+        }
 
     def insert(self):
         db.session.add(self)
@@ -53,24 +58,29 @@ class Users(db.Model):
     name = db.Column(db.String, nullable=False)
     aka = db.Column(db.String, index=True)
     email = db.Column(db.String(), nullable=False, unique=True)
-    phone = db.Column(db.Integer)
-    city = db.Column(db.String(120))
-    profession = db.relationship("Profession", secondary=user_profession,
-                                 backref=db.backref('Users',
-                                                    cascade="all,delete"),
-                                 lazy=True)
-    role = db.relationship("Role", secondary=user_roles,
-                           backref=db.backref('Users',
-                                              cascade="all,delete"),
-                           lazy=True)
-    music = db.relationship("Music", backref="users", lazy=True)
+    phone = db.Column(db.String)
+    city = db.Column(db.String)
+    professions = db.relationship("Profession", secondary=user_profession,
+                                  backref=db.backref('Users',
+                                                     cascade="all,delete"),
+                                  lazy=True)
+    roles = db.relationship("Role", secondary=user_roles,
+                            backref=db.backref('Users',
+                                               cascade="all,delete"),
+                            lazy=True)
+    track = db.relationship("Track", backref="users", lazy=True)
     movies = db.relationship("Movie", backref="users", lazy=True)
     created_at = db.Column(db.DateTime, index=True, default=datetime.now)
     updated_at = db.Column(db.DateTime, index=True, default=datetime.utcnow)
 
     def insert(self):
-        db.session.add(self)
-        db.session.commit()
+        try:
+            db.session.add(self)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            db.session.flush()
+            print(e)
 
     def delete(self):
         db.session.delete(self)
@@ -81,15 +91,18 @@ class Users(db.Model):
 
     @property
     def serialize(self):
+        roles = ''.join([role.serialize["name"] for role in self.roles])
         return {
             "id": self.id,
-            "name": self.last_name,
+            "name": self.name,
             "other_name": self.aka,
             "email": self.email,
             "phone": self.phone,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
-            "role": self.role
+            "role": roles,
+            "profession": [profession.serialize["name"] for profession in self.professions]
+
         }
 
     def __repr__(self):
@@ -104,6 +117,13 @@ class Profession(db.Model):
                            backref=db.backref('Profession',
                                               cascade="all,delete"),
                            lazy=True)
+
+    @property
+    def serialize(self):
+        return {
+            "id": self.id,
+            "name": self.name
+        }
 
     def insert(self):
         db.session.add(self)
@@ -168,6 +188,7 @@ class Track(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     genre_id = db.Column(db.Integer, db.ForeignKey("genres.id"))
     category_id = db.Column(db.Integer, db.ForeignKey("categories.id"))
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     featured_artists = db.Column(db.ARRAY(db.String()))
     producers = db.Column(db.ARRAY(db.String()))
     song_writers = db.Column(db.ARRAY(db.String()))
