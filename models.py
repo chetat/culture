@@ -154,6 +154,14 @@ class Category(db.Model):
     def update(self):
         db.session.commit()
 
+    @property
+    def serialize(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "genres": [genre.serialize["name"] for genre in self.genres]
+        }
+
 
 class Movie(db.Model):
     __tablename__ = 'movies'
@@ -242,3 +250,11 @@ class Genre(db.Model):
 
     def update(self):
         db.session.commit()
+
+    @property
+    def serialize(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "category_id": self.category_id
+        }
