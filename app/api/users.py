@@ -39,7 +39,7 @@ def new_user():
                     user_id=user.id)
         Address.insert(address)
         user_typ = user_type.insert().values(utype_id=utype_id,
-                                                user_id=user.id)
+                                             user_id=user.id)
         db.session.execute(user_typ)
         db.session.commit()
     except Exception as e:
@@ -54,13 +54,5 @@ def new_user():
 @api.route('/users', methods=['GET'])
 def get_all_users():
     users = Users.query.all()
-    return jsonify({"success": True, "data": [user.serialize for user in users]})
-
-@api.route('/users/movies/<int:user_id>', methods=['GET'])
-def get_movies_appearance(user_id):
-    user = Users.query.filter_by(id=user_id).first()
-    user_mv = Movie.query.join(Users, Movie.user_id == user_id).all()
-
     return jsonify({"success": True,
-                    "movies_appeared": [user.serialize for user in user_mv],
-                    "actor": user.serialize["name"] }), 200
+                   "data": [user.serialize for user in users]})

@@ -1,4 +1,4 @@
-from app.api import api
+"""from app.api import api
 from flask import jsonify, request
 from models import Users, Role
 from app import sqlalchemy as db
@@ -45,3 +45,4 @@ def get_role():
     roles = Role.query.all()
     return jsonify([role.serialize
                     for role in roles]), 200
+"""

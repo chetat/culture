@@ -33,6 +33,9 @@ movies_appear = db.Table(
     db.Column("movie_id", db.Integer,
               db.ForeignKey("movies.id"),
               primary_key=True),
+    db.Column("role_id", db.Integer,
+              db.ForeignKey("roles.id"),
+              primary_key=True),
 )
 
 user_tracks = db.Table(
@@ -184,7 +187,6 @@ class Users(db.Model):
 
     @property
     def serialize(self):
-        roles = ''.join([role.serialize["name"] for role in self.roles])
         user_t = ''.join([u_type.serialize["name"] for u_type in self.utypes])
         return {
             "id": self.id,
@@ -195,8 +197,7 @@ class Users(db.Model):
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "user_type": user_t,
-            # "tracks": self.track,
-            "role": roles
+            "bio": self.bio
         }
 
     def __repr__(self):
@@ -268,7 +269,7 @@ class Movie(db.Model):
     synopsis = db.Column(db.String)
     parental_guide = db.Column(db.Integer, nullable=False)
     genre_id = db.Column(db.Integer, db.ForeignKey("genres.id"))
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    uploader_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     users = db.relationship("Users", secondary=movies_appear,
                                  backref=db.backref('Movie',
                                                     cascade="all,delete"),
@@ -296,13 +297,12 @@ class Movie(db.Model):
             "title": self.title,
             "synopsis": self.synopsis,
             "pg": self.parental_guide,
-            "user_id": self.user_id,
+            "user_id": self.uploader_id,
             "genre_id": self.genre_id,
             "category_id": self.category_id,
             "release_date": self.release_date,
             "duration": self.duration,
             "trailer_url": self.trailer_url,
-            # Experimental
         }
 
 

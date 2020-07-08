@@ -1,6 +1,6 @@
 from app.api import api
 from flask import jsonify, request
-from models import (Users, Role, Movie, movies_appear,
+from models import (Users, Role, Movie, movies_appear,Genre, Category,
                     user_roles)
 from app import sqlalchemy as db
 
@@ -24,7 +24,7 @@ def create_movie():
     duration = request.json.get("duration")
     release_date = request.json.get("release_date")
     genre_id = request.json.get("genre_id")
-    user_id = request.json.get("user_id")
+    uploader_id = request.json.get("uploader_id")
     category_id = request.json.get("category_id")
 
     exist_movie = Movie.query.filter_by(title=title).first()
@@ -40,17 +40,17 @@ def create_movie():
         release_date=release_date,
         duration=duration,
         trailer_url=trailer_url,
-        user_id=user_id,
+        uploader_id=uploader_id,
         genre_id=genre_id,
         category_id=category_id
     )
 
     try:
         Movie.insert(new_movie)
-        user_movie = movies_appear.insert().values(movie_id=new_movie.id,
+        """user_movie = movies_appear.insert().values(movie_id=new_movie.id,
                                                    user_id=user_id)
         db.session.execute(user_movie)
-        db.session.commit()
+        db.session.commit()"""
     except Exception as e:
         db.session.rollback()
         db.session.flush()
@@ -74,8 +74,8 @@ def get_all_movies():
                     "data": movies_data}), 200
 
 
-@api.route('/movies/cast/<int:movie_id>', methods=['GET'])
-def get_single_movies(movie_id):
+@api.route('/movies/<int:movie_id>', methods=['GET'])
+def get_single_movie(movie_id):
     # movie_casts = Movie.query.filter(Movie.mov_appear.any(movie_id=movie_id)).all()
     # venues_all = Venue.query.join(Artist, Venue.state == Artist.state).all()
     # data = db.session.query(movies_appear).all()
@@ -83,12 +83,76 @@ def get_single_movies(movie_id):
     data = db.session.query(movies_appear).all()
     user_data = []
     movie = Movie.query.filter_by(id=movie_id).first()
-    movies_appearance = db.session.query(movies_appear).filter(movies_appear.c.movie_id == movie_id).all()   
+    movies_appearance = db.session.query(movies_appear).filter(
+        movies_appear.c.movie_id == movie_id).all()
 
     for mov_ap in movies_appearance:
         user = Users.query.filter_by(id=mov_ap.user_id).first()
         user_data.append(user.serialize)
+
     return jsonify({"success": True,
                     "actors": user_data,
-                    "movie": movie.serialize["title"]
+                    "movie": movie.serialize
                     }), 200
+
+
+@api.route("/movies/<int:movie_id>/members", methods=["POST"])
+def add_appearance_movie(movie_id):
+    if request.method != 'POST':
+        return jsonify({"error": "Method not allowed!"})
+
+    user_id = request.json.get("member_id")
+    role_id = request.json.get("role_id")
+
+    try:
+        user_movie = movies_appear.insert().values(movie_id=movie_id,
+                                                   user_id=user_id,
+                                                   role_id=role_id)
+        db.session.execute(user_movie)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        db.session.flush()
+        print(e)
+        return jsonify({
+            "error": "Could not process your request!"}), 500
+
+    return jsonify({"success": True,
+                    "message": "role_assigned"}), 200
+
+
+@api.route('/movies/users/<int:user_id>/appearance', methods=['GET'])
+def get_user_appearance(user_id):
+    user = Users.query.filter_by(id=user_id).first()
+    # user_mv = Movie.query.join(Users, Movie.user_id == user_id).all()
+    movies_appearance = db.session.query(movies_appear).filter(
+        movies_appear.c.user_id == user_id).all()
+
+    movies_data = []
+    for mov_ap in movies_appearance:
+        role = Role.query.filter_by(id=mov_ap.role_id).first()
+        print(role.name)
+        movie = Movie.query.filter_by(id=mov_ap.movie_id).first()
+        genre = Genre.query.filter_by(id=movie.serialize["genre_id"]).first()
+        cat = Category.query.filter_by(id=movie.serialize["category_id"]).first()
+
+        movies_data.append({
+                "id": movie.serialize["id"],
+                "title": movie.serialize["title"],
+                "synopsis": movie.serialize["synopsis"],
+                "pg": movie.serialize["pg"],
+                "genre": genre.serialize["name"],
+                "category": cat.serialize["name"],
+                "release_date": movie.serialize["release_date"],
+                "duration": movie.serialize["duration"],
+                "trailer_url": movie.serialize["trailer_url"]
+            })
+
+    return jsonify({"success": True,
+                    "movies_appeared": movies_data,
+                    "actor": {
+                        "id": user.serialize["id"],
+                        "name": user.serialize["name"],
+                        "aka": user.serialize["other_name"],
+                        "bio": user.serialize["bio"]
+                        }}), 200

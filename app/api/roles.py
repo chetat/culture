@@ -36,7 +36,7 @@ def delete_role(role_id):
     role = Role.query.filter_by(id=role_id).first()
 
     if not role:
-        raise NotFound(f"Event with Id {event_id} not found")
+        raise NotFound(f"Event with Id {role_id} not found")
     else:
         Role.delete(role)
         return jsonify(
