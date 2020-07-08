@@ -1,8 +1,8 @@
 from app.api import api
 from flask import jsonify, request
-from models import (Users, Profession,
+from models import (Users, Role,
                     Genre,
-                    user_roles, user_profession)
+                    user_roles)
 from app import sqlalchemy as db
 
 
