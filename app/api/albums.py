@@ -4,7 +4,6 @@ from models import (Users, Role, Movie,
                     user_albums,
                     Genre,
                     Album, Track,
-                    
                     Category,
                     user_tracks,
                     user_roles)

@@ -21,6 +21,7 @@ def create_movie():
     genre_id = request.json.get("genre_id")
     uploader_id = request.json.get("uploader_id")
     category_id = request.json.get("category_id")
+    cover_url = request.json.get("cover_url")
 
     exist_movie = Movie.query.filter_by(title=title).first()
 
@@ -38,7 +39,8 @@ def create_movie():
         trailer_url=trailer_url,
         uploader_id=uploader_id,
         genre_id=genre_id,
-        category_id=category_id
+        category_id=category_id,
+        cover_url=cover_url
     )
 
     try:
@@ -51,6 +53,7 @@ def create_movie():
             "error": "Could not process your request!"}), 500
 
     return jsonify(new_movie.serialize), 201
+
 
 """
 Get all movies
@@ -75,13 +78,30 @@ def get_single_movie(movie_id):
     movies_appearance = db.session.query(movies_appear).filter(
         movies_appear.c.movie_id == movie_id).all()
 
+    cat = Category.query.filter_by(id=movie.category_id).first()
+    genre = Genre.query.filter_by(id=movie.serialize["genre_id"]).first()
+
     for mov_ap in movies_appearance:
         user = Users.query.filter_by(id=mov_ap.user_id).first()
-        user_data.append(user.serialize)
-
+        user_data.append({
+            "id": user.id,
+            "name": user.name
+        })
+    data = {
+        "id": movie.id,
+        "title": movie.title,
+        "synopsis": movie.synopsis,
+        "pg": movie.parental_guide,
+        "genre": genre.name,
+        "category": cat.name,
+        "release_date": movie.release_date.strftime("%d-%m-%Y"),
+        "duration": movie.duration,
+        "trailer_url": movie.trailer_url,
+        "cover_url": movie.cover_url
+    }
     return jsonify({"success": True,
                     "actors": user_data,
-                    "movie": movie.serialize
+                    "movie": data
                     }), 200
 
 
@@ -112,6 +132,7 @@ def add_appearance_movie(movie_id):
     return jsonify({"success": True,
                     "message": "role_assigned"}), 200
 
+
 """
 Get all movies where user participated or featured
 in anyway
@@ -128,19 +149,21 @@ def get_user_appearance(user_id):
         print(role.name)
         movie = Movie.query.filter_by(id=mov_ap.movie_id).first()
         genre = Genre.query.filter_by(id=movie.serialize["genre_id"]).first()
-        cat = Category.query.filter_by(id=movie.serialize["category_id"]).first()
-
-        movies_data.append({
-                "id": movie.serialize["id"],
-                "title": movie.serialize["title"],
-                "synopsis": movie.serialize["synopsis"],
-                "pg": movie.serialize["pg"],
-                "genre": genre.serialize["name"],
-                "category": cat.serialize["name"],
-                "release_date": movie.serialize["release_date"],
-                "duration": movie.serialize["duration"],
-                "trailer_url": movie.serialize["trailer_url"]
-            })
+        cat = Category.query.filter_by(
+            id=movie.serialize["category_id"]).first()
+        temp = {
+            "id": movie.serialize["id"],
+            "title": movie.serialize["title"],
+            "synopsis": movie.serialize["synopsis"],
+            "pg": movie.serialize["pg"],
+            "genre": genre.serialize["name"],
+            "category": cat.serialize["name"],
+            "release_date": movie.serialize["release_date"],
+            "duration": movie.serialize["duration"],
+            "trailer_url": movie.serialize["trailer_url"],
+            "User_Role": role.name
+        }
+        movies_data.append(temp)
 
     return jsonify({"success": True,
                     "movies_appeared": movies_data,
@@ -149,4 +172,24 @@ def get_user_appearance(user_id):
                         "name": user.serialize["name"],
                         "aka": user.serialize["other_name"],
                         "bio": user.serialize["bio"]
-                        }}), 200
+                    }}), 200
+
+
+"""
+Delete album with given Album ID
+"""
+@api.route("/movies/<int:movie_id>", methods=["DELETE"])
+def delete_movie(movie_id):
+    if request.method != 'DELETE':
+        return jsonify({"error": "Method not allowed!"})
+
+    movie = Movie.query.filter_by(id=movie_id).first()
+    if not movie:
+        raise NotFound(f"Event with Id {movie_id} not found")
+    else:
+        Movie.delete(movie)
+        return jsonify(
+            {
+                "success": True,
+                "deleted": movie_id
+            }), 200

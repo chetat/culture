@@ -1,6 +1,7 @@
 from app import sqlalchemy as db, create_app
 from json import JSONEncoder
 from datetime import datetime
+from flask_bcrypt import generate_password_hash, check_password_hash
 
 
 user_type = db.Table(
@@ -150,7 +151,8 @@ class Users(db.Model):
                              lazy=True)
     movies = db.relationship("Movie", secondary=movies_appear,
                              backref=db.backref('Users',
-                                                cascade="all,delete"),
+                                                cascade="all, delete-orphan",
+                                                single_parent=True),
                              lazy=True)
     books = db.relationship("Book", secondary=user_books,
                             backref=db.backref('Users',
@@ -162,6 +164,13 @@ class Users(db.Model):
                              lazy=True)
     created_at = db.Column(db.DateTime, index=True, default=datetime.now)
     updated_at = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    password_hash = db.Column(db.String)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(password)
 
     def insert(self):
         try:
@@ -270,12 +279,15 @@ class Movie(db.Model):
     uploader_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     users = db.relationship("Users", secondary=movies_appear,
                             backref=db.backref('Movie',
-                                               cascade="all,delete"),
+                                               cascade="all, delete-orphan",
+                                               single_parent=True),
+                            single_parent=True,
                             lazy=True)
     trailer_url = db.Column(db.String)
     category_id = db.Column(db.Integer, db.ForeignKey("categories.id"))
     duration = db.Column(db.String)
     release_date = db.Column(db.DateTime, index=True, nullable=True)
+    cover_url = db.Column(db.String)
 
     def insert(self):
         db.session.add(self)
@@ -295,12 +307,13 @@ class Movie(db.Model):
             "title": self.title,
             "synopsis": self.synopsis,
             "pg": self.parental_guide,
-            "user_id": self.uploader_id,
+            "uploader_id": self.uploader_id,
             "genre_id": self.genre_id,
             "category_id": self.category_id,
             "release_date": self.release_date,
             "duration": self.duration,
             "trailer_url": self.trailer_url,
+            "cover_url": self.cover_url
         }
 
 

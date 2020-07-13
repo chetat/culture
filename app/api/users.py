@@ -2,6 +2,7 @@ from app.api import api
 from flask import jsonify, request
 from models import (Users, Role, user_type,
                      Movie, Address, user_type)
+from flask_bcrypt import check_password_hash
 from app import sqlalchemy as db
 
 
@@ -9,7 +10,7 @@ from app import sqlalchemy as db
 Add a new user
 """
 @api.route("/users", methods=["POST"])
-def new_user():
+def register_user():
     if request.method != 'POST':
         return jsonify({"error": "Method not allowed!"})
 
@@ -21,6 +22,8 @@ def new_user():
     utype_id = request.json.get("utype_id")
     region = request.json.get("region")
     bio = request.json.get("bio")
+    password = request.json.get("password")
+
     user_exist = Users.query.filter_by(email=email).first()
 
     if user_exist:
@@ -32,10 +35,13 @@ def new_user():
                  email=email,
                  aka=othername,
                  phone=phone,
-                 bio=bio,)
+                 bio=bio)
+
+    user.set_password(password)
+
     try:
         # Create user, get user id and create role
-        # using 
+        # using
         # role_id and user id created
         Users.insert(user)
         address = Address(
@@ -55,9 +61,24 @@ def new_user():
 
     return jsonify(user.serialize), 201
 
-
+"""
+Get all users in all the database
+"""
 @api.route('/users', methods=['GET'])
 def get_all_users():
     users = Users.query.all()
     return jsonify({"success": True,
                    "data": [user.serialize for user in users]})
+
+
+@api.route('/auth/login', methods=["POST"])
+def login():
+    email = request.json.get("email")
+    password = request.json.get("password")
+
+    user = Users.query.filter_by(email=email).first()
+
+    if not user:
+        raise NotFound(f"User with email {email} does not exist")
+    else:
+        return True
