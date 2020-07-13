@@ -3,7 +3,9 @@ from flask import jsonify, request
 from models import Users, Role
 from app import sqlalchemy as db
 
-
+"""
+Create a new role
+"""
 @api.route("/roles", methods=["POST"])
 def new_role():
     if request.method != 'POST':
@@ -21,7 +23,9 @@ def new_role():
 
     return jsonify(role.serialize), 201
 
-
+"""
+Get all roles in DB
+"""
 @api.route("/roles", methods=["GET"])
 def get_roles():
     roles = Role.query.all()

@@ -4,6 +4,9 @@ from models import Users, UType
 from app import sqlalchemy as db
 
 
+"""
+Create a user type.ex: Individual, Organization, admin
+"""
 @api.route("/user-types", methods=["POST"])
 def new_utype():
     if request.method != 'POST':
@@ -21,7 +24,9 @@ def new_utype():
 
     return jsonify(utype.serialize), 201
 
-
+"""
+Get all user types
+"""
 @api.route("/user-types", methods=["GET"])
 def get_u_type():
     user_types = UType.query.all()

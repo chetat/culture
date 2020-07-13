@@ -1,17 +1,12 @@
 from app.api import api
 from flask import jsonify, request
-from models import (Users, Role, Movie, movies_appear,Genre, Category,
+from models import (Users, Role, Movie, movies_appear, Genre, Category,
                     user_roles)
 from app import sqlalchemy as db
 
-
 """
-date_time_str = '28 June 2018'
-date_object = datetime.strptime(date_string, "%d %B, %Y")
-date_time_obj = datetime.datetime.strptime(date_time_str, '%b %d %Y')
+Create a new Movie
 """
-
-
 @api.route("/movies", methods=["POST"])
 def create_movie():
     if request.method != 'POST':
@@ -29,6 +24,7 @@ def create_movie():
 
     exist_movie = Movie.query.filter_by(title=title).first()
 
+    # Check if movie with the same title exists and return error if true
     if exist_movie:
         return jsonify({
             "error": f"Movie with title {exist_movie} Exists!"}), 409
@@ -47,10 +43,6 @@ def create_movie():
 
     try:
         Movie.insert(new_movie)
-        """user_movie = movies_appear.insert().values(movie_id=new_movie.id,
-                                                   user_id=user_id)
-        db.session.execute(user_movie)
-        db.session.commit()"""
     except Exception as e:
         db.session.rollback()
         db.session.flush()
@@ -60,13 +52,11 @@ def create_movie():
 
     return jsonify(new_movie.serialize), 201
 
-
+"""
+Get all movies
+"""
 @api.route('/movies', methods=['GET'])
 def get_all_movies():
-    """# Get movies where user features
-    Artist.query.join(Artist.albums).filter_by(genre_id=genre.id).all()
-    user_mv = Movie.query.join(Users, Users.id == Movie.user_id).all()
-    print(user_mv)"""
     movies = Movie.query.all()
     movies_data = [movie.serialize for movie in movies]
 
@@ -74,12 +64,11 @@ def get_all_movies():
                     "data": movies_data}), 200
 
 
+"""
+Get Movie details with movie ID given
+"""
 @api.route('/movies/<int:movie_id>', methods=['GET'])
 def get_single_movie(movie_id):
-    # movie_casts = Movie.query.filter(Movie.mov_appear.any(movie_id=movie_id)).all()
-    # venues_all = Venue.query.join(Artist, Venue.state == Artist.state).all()
-    # data = db.session.query(movies_appear).all()
-
     data = db.session.query(movies_appear).all()
     user_data = []
     movie = Movie.query.filter_by(id=movie_id).first()
@@ -96,6 +85,9 @@ def get_single_movie(movie_id):
                     }), 200
 
 
+"""
+Attach a user and user role to a movie
+"""
 @api.route("/movies/<int:movie_id>/members", methods=["POST"])
 def add_appearance_movie(movie_id):
     if request.method != 'POST':
@@ -120,11 +112,13 @@ def add_appearance_movie(movie_id):
     return jsonify({"success": True,
                     "message": "role_assigned"}), 200
 
-
+"""
+Get all movies where user participated or featured
+in anyway
+"""
 @api.route('/movies/users/<int:user_id>/appearance', methods=['GET'])
 def get_user_appearance(user_id):
     user = Users.query.filter_by(id=user_id).first()
-    # user_mv = Movie.query.join(Users, Movie.user_id == user_id).all()
     movies_appearance = db.session.query(movies_appear).filter(
         movies_appear.c.user_id == user_id).all()
 

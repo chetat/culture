@@ -13,13 +13,20 @@ from pathlib import Path
 from flask_cors import CORS
 
 sqlalchemy = SQLAlchemy()
-migrate = Migrate()
+migrate = Migrate(compare_type=True)
 jwt = JWTManager()
 bcrypt = Bcrypt()
 
 config = Config()
 env_path = Path('.') / '.env'
 load_dotenv(dotenv_path=env_path)
+
+
+"""
+Create a flask app instance with given
+configuration object, initialize extentions
+and register flask blueprints
+"""
 
 
 def create_app(config_obj=None):

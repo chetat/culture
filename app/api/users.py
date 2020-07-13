@@ -1,9 +1,13 @@
 from app.api import api
 from flask import jsonify, request
-from models import (Users, Role, user_type,Movie, Address, user_type)
+from models import (Users, Role, user_type,
+                     Movie, Address, user_type)
 from app import sqlalchemy as db
 
 
+"""
+Add a new user
+"""
 @api.route("/users", methods=["POST"])
 def new_user():
     if request.method != 'POST':
@@ -20,8 +24,9 @@ def new_user():
     user_exist = Users.query.filter_by(email=email).first()
 
     if user_exist:
-        return jsonify({"error": f"User with email {email} and number {phone} exist!"}), 409
-
+        return jsonify({
+            "error": f"User with email {email} and number {phone} exist!"
+        }), 409
 
     user = Users(name=name,
                  email=email,
