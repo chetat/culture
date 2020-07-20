@@ -28,6 +28,7 @@ user_roles = db.Table(
 
 movies_appear = db.Table(
     "movies_appear",
+    db.Column("id", db.Integer, primary_key=True),
     db.Column("user_id", db.Integer,
               db.ForeignKey("users.id"),
               primary_key=True),
@@ -136,18 +137,22 @@ class Users(db.Model):
     phone = db.Column(db.String)
     city = db.Column(db.String)
     bio = db.Column(db.String)
+    profile_pic = db.Column(db.String)
     utypes = db.relationship("UType", secondary=user_type,
                              backref=db.backref('Users',
-                                                cascade="all,delete"),
+                                                cascade="all, delete-orphan",
+                                                single_parent=True),
                              lazy=True)
     roles = db.relationship("Role", secondary=user_roles,
                             backref=db.backref('Users',
-                                               cascade="all,delete"),
+                                               cascade="all, delete-orphan",
+                                               single_parent=True),
                             lazy=True)
     addresses = db.relationship('Address', backref='users', lazy=True)
     tracks = db.relationship("Track", secondary=user_tracks,
                              backref=db.backref('Users',
-                                                cascade="all,delete"),
+                                                cascade="all, delete-orphan",
+                                                single_parent=True),
                              lazy=True)
     movies = db.relationship("Movie", secondary=movies_appear,
                              backref=db.backref('Users',
@@ -156,11 +161,13 @@ class Users(db.Model):
                              lazy=True)
     books = db.relationship("Book", secondary=user_books,
                             backref=db.backref('Users',
-                                               cascade="all,delete"),
+                                               cascade="all, delete-orphan",
+                                               single_parent=True),
                             lazy=True)
     albums = db.relationship("Album", secondary=user_albums,
                              backref=db.backref('Users',
-                                                cascade="all,delete"),
+                                                cascade="all, delete-orphan",
+                                                single_parent=True),
                              lazy=True)
     created_at = db.Column(db.DateTime, index=True, default=datetime.now)
     updated_at = db.Column(db.DateTime, index=True, default=datetime.utcnow)
@@ -200,6 +207,7 @@ class Users(db.Model):
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "user_type": user_t,
+            "image": self.profile_pic,
             "bio": self.bio
         }
 
@@ -324,7 +332,8 @@ class Album(db.Model):
     artist_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     users = db.relationship("Users", secondary=user_albums,
                             backref=db.backref('Album',
-                                               cascade="all,delete"),
+                                               cascade="all, delete-orphan",
+                                               single_parent=True),
                             lazy=True)
     tracks = db.relationship("Track", backref="albums", lazy=True)
     uploader_id = db.Column(db.Integer, db.ForeignKey("users.id"))
@@ -340,7 +349,8 @@ class Album(db.Model):
             "album_link": self.url,
             "album_title": self.album_name,
             "duration": self.duration,
-            "release_date": self.release_date
+            "category_id": self.category_id,
+            "release_date": self.release_date,
         }
 
     def insert(self):
@@ -367,7 +377,8 @@ class Track(db.Model):
     album_id = db.Column(db.Integer, db.ForeignKey("albums.id"))
     users = db.relationship("Users", secondary=user_tracks,
                             backref=db.backref('Track',
-                                               cascade="all,delete"),
+                                               cascade="all, delete-orphan",
+                                               single_parent=True),
                             lazy=True)
     duration = db.Column(db.String())
     release_date = db.Column(db.DateTime, index=True)
@@ -402,7 +413,8 @@ class Book(db.Model):
     category_id = db.Column(db.Integer, db.ForeignKey("categories.id"))
     users = db.relationship("Users", secondary=user_books,
                             backref=db.backref('Book',
-                                               cascade="all,delete"),
+                                               cascade="all, delete-orphan",
+                                               single_parent=True),
                             lazy=True)
     author_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     url = db.Column(db.String())
@@ -422,7 +434,7 @@ class Book(db.Model):
 
     @property
     def serialize(self):
-        return  {
+        return {
             "title": self.book_name,
             "author_id": self.author_id,
             "book_url": self.url,

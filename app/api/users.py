@@ -1,7 +1,8 @@
 from app.api import api
 from flask import jsonify, request
-from models import (Users, Role, user_type,
-                     Movie, Address, user_type)
+from models import (Users, Role, user_type, Album,
+                    movies_appear, user_albums, Category,
+                    Movie, Address, user_type)
 from flask_bcrypt import check_password_hash
 from app import sqlalchemy as db
 
@@ -23,6 +24,7 @@ def register_user():
     region = request.json.get("region")
     bio = request.json.get("bio")
     password = request.json.get("password")
+    photo = request.json.get("photo")
 
     user_exist = Users.query.filter_by(email=email).first()
 
@@ -31,11 +33,14 @@ def register_user():
             "error": f"User with email {email} and number {phone} exist!"
         }), 409
 
-    user = Users(name=name,
+    user = Users(
+                 name=name,
                  email=email,
                  aka=othername,
                  phone=phone,
-                 bio=bio)
+                 bio=bio,
+                 profile_pic=photo
+                )
 
     user.set_password(password)
 
@@ -61,6 +66,7 @@ def register_user():
 
     return jsonify(user.serialize), 201
 
+
 """
 Get all users in all the database
 """
@@ -82,3 +88,107 @@ def login():
         raise NotFound(f"User with email {email} does not exist")
     else:
         return True
+
+
+"""
+Update user
+"""
+@api.route("/users/<int:id>", methods=["PATCH"])
+def update_user(id):
+    if request.method != 'PATCH':
+        return jsonify({"error": "Method not allowed!"})
+
+    name = request.json.get("name")
+    email = request.json.get("email")
+    othername = request.json.get("othername")
+    phone = request.json.get("phone")
+    city = request.json.get("city")
+    utype_id = request.json.get("utype_id")
+    region = request.json.get("region")
+    bio = request.json.get("bio")
+    photo = request.json.get("photo")
+
+    user = Users.query.filter_by(id=id).first()
+
+    if user:
+        user.name = name
+        user.email = email
+        user.aka = othername
+        user.phone = phone
+        user.bio = bio
+        user.profile_pic = photo
+
+        Users.update(user)
+
+    return jsonify(user.serialize), 201
+
+
+"""
+Get all movies where user participated or featured
+in anyway
+"""
+@api.route('/users/<int:user_id>/details', methods=['GET'])
+def get_user_appearance(user_id):
+    user = Users.query.filter_by(id=user_id).first()
+    movies_appearance = db.session.query(movies_appear).filter(
+        movies_appear.c.user_id == user_id).all()
+
+    album_appearance = db.session.query(user_albums).filter(
+        user_albums.c.user_id == user_id).all()
+
+    movies_data = []
+    for mov_ap in movies_appearance:
+        role = Role.query.filter_by(id=mov_ap.role_id).first()
+        print(role.name)
+        movie = Movie.query.filter_by(id=mov_ap.movie_id).first()
+        genre = Genre.query.filter_by(id=movie.serialize["genre_id"]).first()
+        cat = Category.query.filter_by(
+            id=movie.serialize["category_id"]).first()
+        temp = {
+            "id": movie.serialize["id"],
+            "title": movie.serialize["title"],
+            "synopsis": movie.serialize["synopsis"],
+            "pg": movie.serialize["pg"],
+            "genre": genre.serialize["name"],
+            "category": cat.serialize["name"],
+            "release_date": movie.serialize["release_date"],
+            "duration": movie.serialize["duration"],
+            "trailer_url": movie.serialize["trailer_url"],
+            "user_role": role.name
+        }
+        movies_data.append(temp)
+    album_data = []
+    for album_ap in album_appearance:
+        role = Role.query.filter_by(id=album_ap.role_id).first()
+        album = Album.query.filter_by(id=album_ap.album_id).first()
+        cat = Category.query.filter_by(
+            id=album.serialize["category_id"]).first()
+        temp = {
+            "id": album.id,
+            "title": album.album_name,
+            "category": cat.serialize["name"]
+        }
+        album_data.append(temp)
+
+    album_feat_data = {}
+    for alb in album_data:
+        keys, values = list(alb.keys()), list(alb.values())
+        # Check if role(index 2) exists in each users_featured dict
+        # and assign a new dictionary value with id, role name, and user name as keys
+        # if key(role) exists, assign it the role value(ex: sound Engineer).
+        if keys[2] in album_feat_data:
+            album_feat_data[keys[0]] = values[0]
+            album_feat_data[keys[1]].append(values[1])
+        else:
+            album_feat_data[keys[1]] = [values[1]]
+
+    return jsonify({"success": True,
+                    "albums_appeared": album_feat_data,
+                    "movies_appeared": movies_data,
+                    "user": {
+                        "id": user.serialize["id"],
+                        "name": user.serialize["name"],
+                        "aka": user.serialize["other_name"],
+                        "bio": user.serialize["bio"],
+                        "image": user.serialize["image"]
+                    }}), 200

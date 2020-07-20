@@ -3,6 +3,8 @@ from flask import jsonify, request
 from models import (Users, Role, Movie, movies_appear, Genre, Category,
                     user_roles)
 from app import sqlalchemy as db
+from itertools import groupby
+
 
 """
 Create a new Movie
@@ -58,13 +60,27 @@ def create_movie():
 """
 Get all movies
 """
+
+# This function returns movie release year
+
+
+def grouper(movie):
+    return movie.release_date.year
+
+
 @api.route('/movies', methods=['GET'])
 def get_all_movies():
-    movies = Movie.query.all()
-    movies_data = [movie.serialize for movie in movies]
+    movies = Movie.query.order_by(Movie.release_date).all()
 
+    # Group movies release in same year with groupby iterator
+    group_data = [(year, list(it.serialize for it in items))
+                  for year, items in groupby(movies, grouper)]
+
+    # Iterates through iter objects return by group data
+    # and covert to dict
+    serialized_data = dict([(year, data) for year, data in group_data])
     return jsonify({"success": True,
-                    "data": movies_data}), 200
+                    "data": serialized_data}), 200
 
 
 """
@@ -72,7 +88,7 @@ Get Movie details with movie ID given
 """
 @api.route('/movies/<int:movie_id>', methods=['GET'])
 def get_single_movie(movie_id):
-    data = db.session.query(movies_appear).all()
+    # data = db.session.query(movies_appear).all()
     user_data = []
     movie = Movie.query.filter_by(id=movie_id).first()
     movies_appearance = db.session.query(movies_appear).filter(
@@ -131,49 +147,6 @@ def add_appearance_movie(movie_id):
 
     return jsonify({"success": True,
                     "message": "role_assigned"}), 200
-
-
-"""
-Get all movies where user participated or featured
-in anyway
-"""
-@api.route('/movies/users/<int:user_id>/appearance', methods=['GET'])
-def get_user_appearance(user_id):
-    user = Users.query.filter_by(id=user_id).first()
-    movies_appearance = db.session.query(movies_appear).filter(
-        movies_appear.c.user_id == user_id).all()
-
-    movies_data = []
-    for mov_ap in movies_appearance:
-        role = Role.query.filter_by(id=mov_ap.role_id).first()
-        print(role.name)
-        movie = Movie.query.filter_by(id=mov_ap.movie_id).first()
-        genre = Genre.query.filter_by(id=movie.serialize["genre_id"]).first()
-        cat = Category.query.filter_by(
-            id=movie.serialize["category_id"]).first()
-        temp = {
-            "id": movie.serialize["id"],
-            "title": movie.serialize["title"],
-            "synopsis": movie.serialize["synopsis"],
-            "pg": movie.serialize["pg"],
-            "genre": genre.serialize["name"],
-            "category": cat.serialize["name"],
-            "release_date": movie.serialize["release_date"],
-            "duration": movie.serialize["duration"],
-            "trailer_url": movie.serialize["trailer_url"],
-            "User_Role": role.name
-        }
-        movies_data.append(temp)
-
-    return jsonify({"success": True,
-                    "movies_appeared": movies_data,
-                    "actor": {
-                        "id": user.serialize["id"],
-                        "name": user.serialize["name"],
-                        "aka": user.serialize["other_name"],
-                        "bio": user.serialize["bio"]
-                    }}), 200
-
 
 """
 Delete album with given Album ID

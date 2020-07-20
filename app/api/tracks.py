@@ -54,6 +54,7 @@ def create_track():
         album_id=album_id,
         uploader_id=uploader_id
     )
+
     try:
         Track.insert(new_track)
     except Exception as e:
@@ -62,9 +63,7 @@ def create_track():
         print(e)
         return jsonify({
             "error": "Could not process your request!"}), 500
-
     return jsonify(new_track.serialize), 201
-
 
 """
 Get All tracks in Database
