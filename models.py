@@ -341,7 +341,7 @@ class Album(db.Model):
     url = db.Column(db.String())
     release_date = db.Column(db.DateTime, index=True)
     category_id = db.Column(db.Integer, db.ForeignKey("categories.id"))
-
+    album_cover_url = db.Column(db.String)
     @property
     def serialize(self):
         return {
@@ -349,6 +349,7 @@ class Album(db.Model):
             "album_link": self.url,
             "album_title": self.album_name,
             "duration": self.duration,
+            "cover_url": self.album_cover_url,
             "category_id": self.category_id,
             "release_date": self.release_date,
         }

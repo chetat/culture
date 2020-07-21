@@ -1,6 +1,6 @@
 from app.api import api
 from flask import jsonify, request
-from models import (Users, Role, user_type, Album,
+from models import (Users, Role, user_type, Album, Genre,
                     movies_appear, user_albums, Category,
                     Movie, Address, user_type)
 from flask_bcrypt import check_password_hash
@@ -147,16 +147,12 @@ def get_user_appearance(user_id):
         temp = {
             "id": movie.serialize["id"],
             "title": movie.serialize["title"],
-            "synopsis": movie.serialize["synopsis"],
-            "pg": movie.serialize["pg"],
-            "genre": genre.serialize["name"],
             "category": cat.serialize["name"],
-            "release_date": movie.serialize["release_date"],
-            "duration": movie.serialize["duration"],
-            "trailer_url": movie.serialize["trailer_url"],
             "user_role": role.name
         }
         movies_data.append(temp)
+
+    
     album_data = []
     for album_ap in album_appearance:
         role = Role.query.filter_by(id=album_ap.role_id).first()
@@ -165,8 +161,10 @@ def get_user_appearance(user_id):
             id=album.serialize["category_id"]).first()
         temp = {
             "id": album.id,
-            "title": album.album_name,
-            "category": cat.serialize["name"]
+            "album_name": album.album_name,
+            "cover_url": album.album_cover_url,
+            "roles": role.name,
+            "category": cat.name
         }
         album_data.append(temp)
 
@@ -176,14 +174,16 @@ def get_user_appearance(user_id):
         # Check if role(index 2) exists in each users_featured dict
         # and assign a new dictionary value with id, role name, and user name as keys
         # if key(role) exists, assign it the role value(ex: sound Engineer).
-        if keys[2] in album_feat_data:
+        if keys[3] in album_feat_data:
             album_feat_data[keys[0]] = values[0]
-            album_feat_data[keys[1]].append(values[1])
+            album_feat_data[keys[1]] = values[1]
+            album_feat_data[keys[2]] = values[2]
+            album_feat_data[keys[3]].append(values[3])
+            album_feat_data[keys[4]] = values[4]
         else:
-            album_feat_data[keys[1]] = [values[1]]
-
+            album_feat_data[keys[3]] = [values[3]]
     return jsonify({"success": True,
-                    "albums_appeared": album_feat_data,
+                    "albums_appeared": [album_feat_data] if album_feat_data else [],
                     "movies_appeared": movies_data,
                     "user": {
                         "id": user.serialize["id"],
