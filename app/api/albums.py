@@ -41,6 +41,7 @@ def create_album():
     category_id = request.json.get("category_id")
     release_date = request.json.get("release_date")
     uploader_id = request.json.get("uploader_id")
+    cover_url = request.json.get("cover_url")
 
     new_album = Album(
         album_name=name,
@@ -49,6 +50,7 @@ def create_album():
         category_id=category_id,
         duration=duration,
         url=album_url,
+        album_cover_url=cover_url,
         uploader_id=uploader_id
     )
 
@@ -62,6 +64,47 @@ def create_album():
             "error": "Could not process your request!"}), 500
 
     return jsonify(new_album.serialize), 201
+
+
+"""
+Create a new Music Album
+"""
+@api.route("/albums/<int:album_id>", methods=["PATCH"])
+def Update_album(album_id):
+    if request.method != 'POST':
+        return jsonify({"error": "Method not allowed!"})
+
+    name = request.json.get("name")
+    artist_id = request.json.get("artist_id")
+    album_url = request.json.get("album_url")
+    duration = request.json.get("duration")
+    category_id = request.json.get("category_id")
+    release_date = request.json.get("release_date")
+    uploader_id = request.json.get("uploader_id")
+    cover_url = request.json.get("cover_url")
+
+    album = Album.query.filter_by(id=album_id).first()
+
+    if not album:
+        raise NotFound(f"Album with ID {album_id} Not Found")
+
+    try:
+        album.name = name
+        album.artist_id = artist_id
+        album.album_url = album_url
+        album.album_cover_url = cover_url
+        album.uploader_id = uploader_id
+        album.duration = duration
+        album.category_id = category_id
+        album.release_date = release_date
+    except Exception as e:
+        db.session.rollback()
+        db.session.flush()
+        print(e)
+        return jsonify({
+            "error": "Could not process your request!"}), 500
+
+    return jsonify(new_album.serialize), 200
 
 
 """
@@ -132,6 +175,8 @@ def get_album(album_id):
             users_featured[keys[1]] = values[1]
             users_featured[keys[2]].append(values[2])
         else:
+            users_featured[keys[0]] = values[0]
+            users_featured[keys[1]] = values[1]
             users_featured[keys[2]] = [values[2]]
     data = {
         "id": album.id,
@@ -139,6 +184,7 @@ def get_album(album_id):
         "category": cat.name,
         "release_date": album.release_date.strftime("%d-%m-%Y"),
         "duration": album.duration,
+        "cover_url": album.album_cover_url,
         "album_url": album.url
     }
     return jsonify({"success": True,

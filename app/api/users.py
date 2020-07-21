@@ -34,13 +34,13 @@ def register_user():
         }), 409
 
     user = Users(
-                 name=name,
-                 email=email,
-                 aka=othername,
-                 phone=phone,
-                 bio=bio,
-                 profile_pic=photo
-                )
+        name=name,
+        email=email,
+        aka=othername,
+        phone=phone,
+        bio=bio,
+        profile_pic=photo
+    )
 
     user.set_password(password)
 
@@ -50,9 +50,9 @@ def register_user():
         # role_id and user id created
         Users.insert(user)
         address = Address(
-                    city=city,
-                    region=region,
-                    user_id=user.id)
+            city=city,
+            region=region,
+            user_id=user.id)
         Address.insert(address)
         user_typ = user_type.insert().values(utype_id=utype_id,
                                              user_id=user.id)
@@ -74,7 +74,7 @@ Get all users in all the database
 def get_all_users():
     users = Users.query.all()
     return jsonify({"success": True,
-                   "data": [user.serialize for user in users]})
+                    "data": [user.serialize for user in users]})
 
 
 @api.route('/auth/login', methods=["POST"])
@@ -139,20 +139,39 @@ def get_user_appearance(user_id):
     movies_data = []
     for mov_ap in movies_appearance:
         role = Role.query.filter_by(id=mov_ap.role_id).first()
-        print(role.name)
         movie = Movie.query.filter_by(id=mov_ap.movie_id).first()
         genre = Genre.query.filter_by(id=movie.serialize["genre_id"]).first()
         cat = Category.query.filter_by(
             id=movie.serialize["category_id"]).first()
-        temp = {
-            "id": movie.serialize["id"],
-            "title": movie.serialize["title"],
-            "category": cat.serialize["name"],
-            "user_role": role.name
-        }
-        movies_data.append(temp)
+        if movie:
+            temp = {
+                "id": movie.id,
+                "title": movie.title,
+                "category": cat.serialize["name"],
+                "roles": role.name,
+                "cover_url": movie.cover_url
+            }
+            movies_data.append(temp)
 
-    
+    movies_feat_data = {}
+    for mov in movies_data:
+        keys, values = list(mov.keys()), list(mov.values())
+        # Check if role(index 2) exists in each users_featured dict
+        # and assign a new dictionary value with id, role name, and user name as keys
+        # if key(role) exists, assign it the role value(ex: sound Engineer).
+        if keys[3] in movies_feat_data:
+            movies_feat_data[keys[0]] = values[0]
+            movies_feat_data[keys[1]] = values[1]
+            movies_feat_data[keys[2]] = values[2]
+            movies_feat_data[keys[3]].append(values[3])
+            movies_feat_data[keys[4]] = values[4]
+        else:
+            movies_feat_data[keys[0]] = values[0]
+            movies_feat_data[keys[1]] = values[1]
+            movies_feat_data[keys[2]] = values[2]
+            movies_feat_data[keys[3]] = [values[3]]
+            movies_feat_data[keys[4]] = values[4]
+
     album_data = []
     for album_ap in album_appearance:
         role = Role.query.filter_by(id=album_ap.role_id).first()
@@ -181,10 +200,15 @@ def get_user_appearance(user_id):
             album_feat_data[keys[3]].append(values[3])
             album_feat_data[keys[4]] = values[4]
         else:
+            album_feat_data[keys[0]] = values[0]
+            album_feat_data[keys[1]] = values[1]
+            album_feat_data[keys[2]] = values[2]
             album_feat_data[keys[3]] = [values[3]]
+            album_feat_data[keys[4]] = values[4]
+
     return jsonify({"success": True,
                     "albums_appeared": [album_feat_data] if album_feat_data else [],
-                    "movies_appeared": movies_data,
+                    "movies_appeared": [movies_feat_data] if movies_feat_data else [],
                     "user": {
                         "id": user.serialize["id"],
                         "name": user.serialize["name"],
