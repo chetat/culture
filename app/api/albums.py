@@ -71,7 +71,7 @@ Create a new Music Album
 """
 @api.route("/albums/<int:album_id>", methods=["PATCH"])
 def Update_album(album_id):
-    if request.method != 'POST':
+    if request.method != 'PATCH':
         return jsonify({"error": "Method not allowed!"})
 
     name = request.json.get("name")
@@ -89,7 +89,7 @@ def Update_album(album_id):
         raise NotFound(f"Album with ID {album_id} Not Found")
 
     try:
-        album.name = name
+        album.album_name = name
         album.artist_id = artist_id
         album.album_url = album_url
         album.album_cover_url = cover_url
@@ -97,6 +97,7 @@ def Update_album(album_id):
         album.duration = duration
         album.category_id = category_id
         album.release_date = release_date
+        Album.update(album)
     except Exception as e:
         db.session.rollback()
         db.session.flush()
@@ -104,7 +105,7 @@ def Update_album(album_id):
         return jsonify({
             "error": "Could not process your request!"}), 500
 
-    return jsonify(new_album.serialize), 200
+    return jsonify(album.serialize), 200
 
 
 """
@@ -128,14 +129,13 @@ def delete_album(album_id):
     album = Album.query.filter_by(id=album_id).first()
     if not album:
         raise NotFound(f"Event with Id {album_id} not found")
-    else:
-        Album.delete(album)
-        return jsonify(
-            {
-                "success": True,
-                "deleted": album_id
-            }), 200
 
+    Album.delete(album)
+    return jsonify(
+        {
+            "success": True,
+            "deleted": album_id
+        }), 200
 
 
 """
@@ -188,7 +188,7 @@ def get_album(album_id):
         "album_url": album.url
     }
     return jsonify({"success": True,
-                    "user": users_featured,
+                    "users": [users_featured] if users_featured else [],
                     "album": data
                     }), 200
 
@@ -219,6 +219,7 @@ def add_feature_track(track_id):
 
     return jsonify({"success": True,
                     "message": "role_assigned"}), 200
+
 
 """
 Add a user with a given role(artist, producer, composer etc..) to an Album.

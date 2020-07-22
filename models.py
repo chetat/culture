@@ -347,11 +347,12 @@ class Album(db.Model):
         return {
             "id": self.id,
             "album_link": self.url,
-            "album_title": self.album_name,
+            "album_name": self.album_name,
             "duration": self.duration,
             "cover_url": self.album_cover_url,
             "category_id": self.category_id,
-            "release_date": self.release_date,
+            "year": self.release_date.strftime("%Y"),
+            "release_date": self.release_date.strftime("%d-%m-%Y")
         }
 
     def insert(self):
@@ -363,6 +364,7 @@ class Album(db.Model):
         db.session.commit()
 
     def update(self):
+        print("Updating")
         db.session.commit()
 
 
