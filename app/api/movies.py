@@ -73,12 +73,12 @@ def get_all_movies():
     movies = Movie.query.order_by(Movie.release_date).all()
 
     # Group movies release in same year with groupby iterator
-    group_data = [(year, list(it.serialize for it in items))
-                  for year, items in groupby(movies, grouper)]
-
+    """group_data = [(year, list(it.serialize for it in items))
+                  for year, items in groupby(movies, grouper)]"""
+    serialized_data = [movie.serialize for movie in movies]
     # Iterates through iter objects return by group data
     # and covert to dict
-    serialized_data = dict([(year, data) for year, data in group_data])
+    #serialized_data = dict([(year, data) for year, data in group_data])
     return jsonify({"success": True,
                     "data": serialized_data}), 200
 
