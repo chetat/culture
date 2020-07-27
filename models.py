@@ -277,6 +277,24 @@ class Category(db.Model):
         }
 
 
+class MovieType(db.Model):
+    __tablename__ = 'movie_types'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
+
+    def insert(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
+    def update(self):
+        print("Updating")
+        db.session.commit()
+
+
 class Movie(db.Model):
     __tablename__ = 'movies'
     id = db.Column(db.Integer, primary_key=True)
@@ -285,6 +303,7 @@ class Movie(db.Model):
     parental_guide = db.Column(db.Integer, nullable=False)
     genre_id = db.Column(db.Integer, db.ForeignKey("genres.id"))
     uploader_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    movie_type = db.Column(db.Integer, db.ForeignKey("movie_types.id"))
     users = db.relationship("Users", secondary=movies_appear,
                             backref=db.backref('Movie',
                                                cascade="all, delete-orphan",
@@ -337,11 +356,12 @@ class Album(db.Model):
                             lazy=True)
     tracks = db.relationship("Track", backref="albums", lazy=True)
     uploader_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    duration = db.Column(db.String())
+    duration = db.Column(db.Integer)
     url = db.Column(db.String())
     release_date = db.Column(db.DateTime, index=True)
     category_id = db.Column(db.Integer, db.ForeignKey("categories.id"))
     album_cover_url = db.Column(db.String)
+    
     @property
     def serialize(self):
         return {
