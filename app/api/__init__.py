@@ -4,5 +4,5 @@ api = Blueprint('api', __name__, url_prefix='/api/v1')
 
 from . import (
     users, roles, roles, movies, categories,
-    genres, u_type, albums, books, tracks
+    genres, u_type, albums, books, tracks, movie_type
     )

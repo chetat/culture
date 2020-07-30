@@ -281,6 +281,7 @@ class MovieType(db.Model):
     __tablename__ = 'movie_types'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
+    movies = db.relationship("Movie", backref="movie_types", lazy=True)
 
     def insert(self):
         db.session.add(self)
@@ -293,6 +294,13 @@ class MovieType(db.Model):
     def update(self):
         print("Updating")
         db.session.commit()
+
+    @property
+    def serialize(self):
+        return {
+            "id": self.id,
+            "name": self.name
+    }
 
 
 class Movie(db.Model):
@@ -312,8 +320,9 @@ class Movie(db.Model):
                             lazy=True)
     trailer_url = db.Column(db.String)
     category_id = db.Column(db.Integer, db.ForeignKey("categories.id"))
-    duration = db.Column(db.String)
-    release_date = db.Column(db.DateTime, index=True, nullable=True)
+    duration = db.Column(db.Integer)
+    release_date = db.Column(db.DateTime, nullable=True)
+    release_year = db.Column(db.String, index=True)
     cover_url = db.Column(db.String)
 
     def insert(self):
@@ -329,6 +338,7 @@ class Movie(db.Model):
 
     @property
     def serialize(self):
+        genre = Genre.query.filter_by(id=self.genre_id).first()
         return {
             "id": self.id,
             "title": self.title,
@@ -336,9 +346,11 @@ class Movie(db.Model):
             "pg": self.parental_guide,
             "uploader_id": self.uploader_id,
             "genre_id": self.genre_id,
+            "genre": genre.name,
             "category_id": self.category_id,
             "release_date": self.release_date,
             "duration": self.duration,
+            "year": self.release_year,
             "trailer_url": self.trailer_url,
             "cover_url": self.cover_url
         }
@@ -361,7 +373,7 @@ class Album(db.Model):
     release_date = db.Column(db.DateTime, index=True)
     category_id = db.Column(db.Integer, db.ForeignKey("categories.id"))
     album_cover_url = db.Column(db.String)
-    
+
     @property
     def serialize(self):
         return {

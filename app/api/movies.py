@@ -17,6 +17,7 @@ def create_movie():
     title = request.json.get("title")
     synopsis = request.json.get("synopsis")
     pg = request.json.get("pg")
+    type_id = request.json.get("type_id")
     trailer_url = request.json.get("trailer_url")
     duration = request.json.get("duration")
     release_date = request.json.get("release_date")
@@ -24,7 +25,7 @@ def create_movie():
     uploader_id = request.json.get("uploader_id")
     category_id = request.json.get("category_id")
     cover_url = request.json.get("cover_url")
-
+    year = request.json.get("year")
     exist_movie = Movie.query.filter_by(title=title).first()
 
     # Check if movie with the same title exists and return error if true
@@ -42,7 +43,9 @@ def create_movie():
         uploader_id=uploader_id,
         genre_id=genre_id,
         category_id=category_id,
-        cover_url=cover_url
+        cover_url=cover_url,
+        movie_type=type_id,
+        release_year=year
     )
 
     try:
@@ -61,12 +64,6 @@ def create_movie():
 Get all movies
 """
 
-# This function returns movie release year
-
-
-def grouper(movie):
-    return movie.release_date.year
-
 
 @api.route('/movies', methods=['GET'])
 def get_all_movies():
@@ -78,7 +75,22 @@ def get_all_movies():
     serialized_data = [movie.serialize for movie in movies]
     # Iterates through iter objects return by group data
     # and covert to dict
-    #serialized_data = dict([(year, data) for year, data in group_data])
+    # serialized_data = dict([(year, data) for year, data in group_data])
+    return jsonify({"success": True,
+                    "data": serialized_data}), 200
+
+
+@api.route('/movies/years/<year>', methods=['GET'])
+def get_year_movies(year):
+    movies = Movie.query.filter_by(release_year=year).all()
+
+    # Group movies release in same year with groupby iterator
+    """group_data = [(year, list(it.serialize for it in items))
+                  for year, items in groupby(movies, grouper)]"""
+    serialized_data = [movie.serialize for movie in movies]
+    # Iterates through iter objects return by group data
+    # and covert to dict
+    # serialized_data = dict([(year, data) for year, data in group_data])
     return jsonify({"success": True,
                     "data": serialized_data}), 200
 
@@ -147,6 +159,59 @@ def add_appearance_movie(movie_id):
 
     return jsonify({"success": True,
                     "message": "role_assigned"}), 200
+
+
+"""
+Update a new Movie
+"""
+@api.route("/movies/<int:movie_id>", methods=["PATCH"])
+def update_movie(movie_id):
+    if request.method != 'PATCH':
+        return jsonify({"error": "Method not allowed!"})
+
+    title = request.json.get("title")
+    synopsis = request.json.get("synopsis")
+    pg = request.json.get("pg")
+    type_id = request.json.get("type_id")
+    trailer_url = request.json.get("trailer_url")
+    duration = request.json.get("duration")
+    release_date = request.json.get("release_date")
+    genre_id = request.json.get("genre_id")
+    uploader_id = request.json.get("uploader_id")
+    category_id = request.json.get("category_id")
+    cover_url = request.json.get("cover_url")
+    year = request.json.get("year")
+
+    movie = Movie.query.filter_by(id=movie_id).first()
+
+    # Check if movie with the same title exists and return error if true
+    if not movie:
+        raise NotFound("Movie Not found")
+
+    movie.title = title
+    movie.synopsis = synopsis
+    movie.parental_guide = pg
+    movie.release_date = release_date
+    movie.duration = duration
+    movie.trailer_url = trailer_url
+    movie.uploader_id = uploader_id
+    movie.genre_id = genre_id
+    movie.category_id = category_id,
+    movie.cover_url = cover_url
+    movie.movie_type = type_id
+    movie.release_year = year
+
+    try:
+        Movie.update(movie)
+    except Exception as e:
+        db.session.rollback()
+        db.session.flush()
+        print(e)
+        return jsonify({
+            "error": "Could not process your request!"}), 500
+
+    return jsonify(movie.serialize), 200
+
 
 """
 Delete album with given Album ID
