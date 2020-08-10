@@ -339,6 +339,7 @@ class Movie(db.Model):
     @property
     def serialize(self):
         genre = Genre.query.filter_by(id=self.genre_id).first()
+        category = Category.query.filter_by(id=self.category_id).first()
         return {
             "id": self.id,
             "title": self.title,
@@ -346,8 +347,9 @@ class Movie(db.Model):
             "pg": self.parental_guide,
             "uploader_id": self.uploader_id,
             "genre_id": self.genre_id,
-            "genre": genre.name,
+            "genre": genre.name if genre else None,
             "category_id": self.category_id,
+            "category": category.name,
             "release_date": self.release_date,
             "duration": self.duration,
             "year": self.release_year,

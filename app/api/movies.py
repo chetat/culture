@@ -4,8 +4,21 @@ from models import (Users, Role, Movie, movies_appear, Genre, Category,
                     user_roles)
 from app import sqlalchemy as db
 from itertools import groupby
+from Exceptions import NotFound, MethodNotAllowed, \
+    Forbiden, InternalServerError, ExistingResource,\
+    BadRequest, AuthError
 
 
+@api.errorhandler(BadRequest)
+@api.errorhandler(Forbiden)
+@api.errorhandler(MethodNotAllowed)
+@api.errorhandler(InternalServerError)
+def api_error(error):
+    payload = dict(error.payload or ())
+    payload['code'] = error.status_code
+    payload['message'] = error.message
+    payload['success'] = error.success
+    return jsonify(payload), error.status_code
 """
 Create a new Movie
 """
@@ -14,18 +27,26 @@ def create_movie():
     if request.method != 'POST':
         return jsonify({"error": "Method not allowed!"})
 
-    title = request.json.get("title")
-    synopsis = request.json.get("synopsis")
-    pg = request.json.get("pg")
-    type_id = request.json.get("type_id")
-    trailer_url = request.json.get("trailer_url")
-    duration = request.json.get("duration")
-    release_date = request.json.get("release_date")
-    genre_id = request.json.get("genre_id")
-    uploader_id = request.json.get("uploader_id")
-    category_id = request.json.get("category_id")
-    cover_url = request.json.get("cover_url")
-    year = request.json.get("year")
+    data = request.get_json()
+    print(data)
+    for key, value in data.items():
+        print(key)
+        if data[key] is None:
+            raise BadRequest(f"Provide value for {data[key]}")
+
+    title = data.get("title")
+    synopsis = data.get("synopsis")
+    pg = data.get("pg")
+    type_id = data.get("type_id")
+    trailer_url = data.get("trailer_url")
+    duration = data.get("duration")
+    release_date = data.get("release_date")
+    genre_id = data.get("genre_id")
+    uploader_id = data.get("uploader_id")
+    category_id = data.get("category_id")
+    cover_url = data.get("cover_url")
+    year = release_date.split('-')[0]
+
     exist_movie = Movie.query.filter_by(title=title).first()
 
     # Check if movie with the same title exists and return error if true
@@ -159,6 +180,7 @@ def add_appearance_movie(movie_id):
 
     return jsonify({"success": True,
                     "message": "role_assigned"}), 200
+
 
 
 """
