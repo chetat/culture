@@ -12,14 +12,17 @@ from dotenv import load_dotenv
 from pathlib import Path
 from flask_cors import CORS
 
+
+load_dotenv()
+
+
 sqlalchemy = SQLAlchemy()
 migrate = Migrate(compare_type=True)
 jwt = JWTManager()
 bcrypt = Bcrypt()
 
 config = Config()
-env_path = Path('.') / '.env'
-load_dotenv(dotenv_path=env_path)
+load_dotenv()
 
 
 """

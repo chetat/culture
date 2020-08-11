@@ -3,6 +3,14 @@ from flask import jsonify
 # Error handler
 
 
+def api_error(error):
+    payload = dict(error.payload or ())
+    payload['code'] = error.status_code
+    payload['message'] = error.message
+    payload['success'] = error.success
+    return jsonify(payload), error.status_code
+
+
 class AppErrorRequest(Exception):
     status_code = 400
 
